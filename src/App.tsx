@@ -1,4 +1,11 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+
+// Stripe integration configuration
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+const STRIPE_STARTER_PRICE_ID = import.meta.env.VITE_STRIPE_STARTER_PRICE_ID || ''
+const STRIPE_PROFESSIONAL_PRICE_ID = import.meta.env.VITE_STRIPE_PROFESSIONAL_PRICE_ID || ''
+const APP_URL = import.meta.env.VITE_APP_URL || 'https://app.ekprocook.com'
 
 // Icons as simple SVG components
 const CheckIcon = () => (
@@ -98,7 +105,7 @@ const FEATURES = [
 const PRICING = [
   {
     name: 'Starter',
-    price: '6.99',
+    price: '15',
     description: 'Perfect for single-location businesses',
     features: [
       'Temperature logging',
@@ -114,7 +121,7 @@ const PRICING = [
   },
   {
     name: 'Professional',
-    price: '14.99',
+    price: '30',
     description: 'For growing businesses with multiple sites',
     features: [
       'Everything in Starter',
@@ -327,6 +334,59 @@ function Features() {
 }
 
 function Pricing() {
+  const [isLoading, setIsLoading] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleCheckout = useCallback(async (tier: 'starter' | 'professional') => {
+    // If Stripe isn't configured, fall back to app link
+    if (!SUPABASE_URL || !STRIPE_STARTER_PRICE_ID) {
+      window.location.href = APP_URL
+      return
+    }
+
+    setIsLoading(tier)
+    setError(null)
+
+    try {
+      const priceId = tier === 'starter' ? STRIPE_STARTER_PRICE_ID : STRIPE_PROFESSIONAL_PRICE_ID
+
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/create-checkout-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            priceId,
+            successUrl: `${APP_URL}/settings?session_id={CHECKOUT_SESSION_ID}&welcome=true`,
+            cancelUrl: window.location.href,
+          }),
+        }
+      )
+
+      const data = await response.json()
+
+      if (data.error) {
+        throw new Error(data.error)
+      }
+
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (err) {
+      console.error('Checkout error:', err)
+      setError('Failed to start checkout. Please try again.')
+      // Fall back to app
+      setTimeout(() => {
+        window.location.href = APP_URL
+      }, 2000)
+    } finally {
+      setIsLoading(null)
+    }
+  }, [])
+
   return (
     <section id="pricing" className="section bg-gray-50">
       <div className="container-custom">
@@ -339,53 +399,75 @@ function Pricing() {
           </p>
         </div>
 
+        {error && (
+          <div className="max-w-md mx-auto mb-8 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm text-center">
+            {error}
+          </div>
+        )}
+
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {PRICING.map((plan, index) => (
-            <div
-              key={index}
-              className={`bg-white rounded-2xl p-8 ${
-                plan.popular
-                  ? 'ring-2 ring-primary-500 shadow-xl relative'
-                  : 'border border-gray-200'
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary-500 text-white px-4 py-1 rounded-full text-sm font-medium">
-                  Most Popular
-                </div>
-              )}
+          {PRICING.map((plan, index) => {
+            const tier = plan.name.toLowerCase() as 'starter' | 'professional'
+            const loading = isLoading === tier
 
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-              <p className="text-gray-600 mb-4">{plan.description}</p>
-
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-gray-900">£{plan.price}</span>
-                <span className="text-gray-600">/month</span>
-              </div>
-
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center text-green-600 flex-shrink-0">
-                      <CheckIcon />
-                    </div>
-                    <span className="text-gray-600">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <a
-                href="https://app.ekprocook.com"
-                className={`block text-center py-4 rounded-xl font-semibold transition-all ${
+            return (
+              <div
+                key={index}
+                className={`bg-white rounded-2xl p-8 ${
                   plan.popular
-                    ? 'bg-primary-500 text-white hover:bg-primary-600'
-                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                    ? 'ring-2 ring-primary-500 shadow-xl relative'
+                    : 'border border-gray-200'
                 }`}
               >
-                {plan.cta}
-              </a>
-            </div>
-          ))}
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                    Most Popular
+                  </div>
+                )}
+
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                <p className="text-gray-600 mb-4">{plan.description}</p>
+
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-gray-900">£{plan.price}</span>
+                  <span className="text-gray-600">/month</span>
+                </div>
+
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-center gap-3">
+                      <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center text-green-600 flex-shrink-0">
+                        <CheckIcon />
+                      </div>
+                      <span className="text-gray-600">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => handleCheckout(tier)}
+                  disabled={loading || isLoading !== null}
+                  className={`w-full text-center py-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                    plan.popular
+                      ? 'bg-primary-500 text-white hover:bg-primary-600'
+                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  {loading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Loading...
+                    </span>
+                  ) : (
+                    plan.cta
+                  )}
+                </button>
+              </div>
+            )
+          })}
         </div>
       </div>
     </section>
