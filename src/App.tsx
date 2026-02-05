@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react'
 
 // Stripe integration configuration
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-const STRIPE_STARTER_PRICE_ID = import.meta.env.VITE_STRIPE_STARTER_PRICE_ID || ''
-const STRIPE_PROFESSIONAL_PRICE_ID = import.meta.env.VITE_STRIPE_PROFESSIONAL_PRICE_ID || ''
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://qseqzrgtrrtlnpstlhwa.supabase.co'
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzZXF6cmd0cnJ0bG5wc3RsaHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNjA2OTksImV4cCI6MjA4NTYzNjY5OX0.xSDtp3tDwInM39vDAoD1dSVdx2rZ8Ok-zIKqjjm0OGI'
+const STRIPE_STARTER_PRICE_ID = import.meta.env.VITE_STRIPE_STARTER_PRICE_ID || 'price_1SS3H2BqWf8SabvTPbEUHfLN'
+const STRIPE_PROFESSIONAL_PRICE_ID = import.meta.env.VITE_STRIPE_PROFESSIONAL_PRICE_ID || 'price_1SS3HFBqWf8SabvT28O1x6Ay'
 const APP_URL = import.meta.env.VITE_APP_URL || 'https://app.ekprocook.com'
 
 // Icons as simple SVG components
