@@ -362,8 +362,8 @@ function Pricing() {
           },
           body: JSON.stringify({
             priceId,
-            successUrl: `${APP_URL}/settings?session_id={CHECKOUT_SESSION_ID}&welcome=true`,
-            cancelUrl: window.location.href,
+            successUrl: `${APP_URL}/settings?welcome=true`,
+            cancelUrl: `${window.location.origin}/`,
           }),
         }
       )
