@@ -340,6 +340,7 @@ function Pricing() {
   const handleCheckout = useCallback(async (tier: 'starter' | 'professional') => {
     // If Stripe isn't configured, fall back to app link
     if (!SUPABASE_URL || !STRIPE_STARTER_PRICE_ID) {
+      console.log('Missing config, redirecting to app')
       window.location.href = APP_URL
       return
     }
@@ -349,6 +350,7 @@ function Pricing() {
 
     try {
       const priceId = tier === 'starter' ? STRIPE_STARTER_PRICE_ID : STRIPE_PROFESSIONAL_PRICE_ID
+      console.log('Creating checkout session with priceId:', priceId)
 
       const response = await fetch(
         `${SUPABASE_URL}/functions/v1/create-checkout-session`,
@@ -366,22 +368,27 @@ function Pricing() {
         }
       )
 
+      console.log('Response status:', response.status)
       const data = await response.json()
+      console.log('Response data:', data)
 
       if (data.error) {
         throw new Error(data.error)
       }
 
       if (data.url) {
+        console.log('Redirecting to:', data.url)
         window.location.href = data.url
+      } else {
+        throw new Error('No checkout URL returned')
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Checkout error:', err)
-      setError('Failed to start checkout. Please try again.')
-      // Fall back to app
+      setError(`Checkout failed: ${err.message || 'Unknown error'}`)
+      // Fall back to app after 3 seconds
       setTimeout(() => {
         window.location.href = APP_URL
-      }, 2000)
+      }, 3000)
     } finally {
       setIsLoading(null)
     }
