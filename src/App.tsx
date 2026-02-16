@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 
 // Stripe integration configuration
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://qseqzrgtrrtlnpstlhwa.supabase.co'
@@ -148,7 +149,7 @@ const FAQS = [
   },
   {
     question: 'Can I try before I buy?',
-    answer: 'Absolutely! We offer a 14-day free trial with full access to all features. No credit card required to start.',
+    answer: 'Absolutely! We offer a 14-day free trial with full access to all features. Cancel anytime before your trial ends.',
   },
   {
     question: 'Does it work offline?',
@@ -184,8 +185,9 @@ function Navbar() {
             <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">Features</a>
             <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors">Pricing</a>
             <a href="#faq" className="text-gray-600 hover:text-gray-900 transition-colors">FAQ</a>
+            <Link to="/blog" className="text-gray-600 hover:text-gray-900 transition-colors">Blog</Link>
             <a href="https://app.ekprocook.com" className="text-gray-600 hover:text-gray-900 transition-colors">Login</a>
-            <a href="https://app.ekprocook.com" className="btn-primary">
+            <a href="#pricing" className="btn-primary">
               Start Free Trial
             </a>
           </div>
@@ -207,8 +209,9 @@ function Navbar() {
             <a href="#features" className="block text-gray-600 hover:text-gray-900" onClick={() => setMobileMenuOpen(false)}>Features</a>
             <a href="#pricing" className="block text-gray-600 hover:text-gray-900" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
             <a href="#faq" className="block text-gray-600 hover:text-gray-900" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
+            <Link to="/blog" className="block text-gray-600 hover:text-gray-900" onClick={() => setMobileMenuOpen(false)}>Blog</Link>
             <a href="https://app.ekprocook.com" className="block text-gray-600 hover:text-gray-900">Login</a>
-            <a href="https://app.ekprocook.com" className="btn-primary block text-center">
+            <a href="#pricing" className="btn-primary block text-center" onClick={() => setMobileMenuOpen(false)}>
               Start Free Trial
             </a>
           </div>
@@ -239,7 +242,7 @@ function Hero() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="https://app.ekprocook.com" className="btn-primary text-lg px-8 py-4">
+            <a href="#pricing" className="btn-primary text-lg px-8 py-4">
               Start 14-Day Free Trial
             </a>
             <a href="#features" className="btn-secondary text-lg px-8 py-4">
@@ -248,48 +251,25 @@ function Hero() {
           </div>
 
           <p className="mt-6 text-sm text-gray-500">
-            No credit card required • Cancel anytime
+            14-day free trial • Cancel anytime
           </p>
         </div>
 
-        {/* App Preview */}
+        {/* Video Preview */}
         <div className="mt-16 relative">
           <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-10 pointer-events-none" />
-          <div className="bg-gray-900 rounded-2xl p-2 md:p-4 shadow-2xl max-w-4xl mx-auto animate-float">
-            <div className="bg-white rounded-xl overflow-hidden">
-              <div className="bg-gradient-to-r from-primary-500 to-primary-600 p-4 md:p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                      <span className="text-white font-bold">EK</span>
-                    </div>
-                    <span className="text-white font-semibold hidden sm:block">Your Restaurant</span>
-                  </div>
-                  <div className="text-white/80 text-sm">Rating: 5/5</div>
-                </div>
-              </div>
-              <div className="p-4 md:p-6 space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {['Temps', 'Checks', 'Clean', 'Diary'].map((item) => (
-                    <div key={item} className="bg-gray-50 rounded-xl p-4 text-center">
-                      <div className="w-10 h-10 bg-primary-100 rounded-full mx-auto mb-2 flex items-center justify-center">
-                        <div className="w-5 h-5 bg-primary-500 rounded-full" />
-                      </div>
-                      <p className="text-sm font-medium text-gray-700">{item}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-green-50 rounded-xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                    <CheckIcon />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">All checks complete</p>
-                    <p className="text-sm text-gray-500">Ready for inspection</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="bg-gray-900 rounded-2xl p-2 md:p-4 shadow-2xl max-w-4xl mx-auto">
+            <video
+              className="w-full rounded-xl"
+              autoPlay
+              loop
+              muted
+              playsInline
+              poster="/og-image.png"
+            >
+              <source src="/hero-video.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
         </div>
       </div>
@@ -350,7 +330,14 @@ function Pricing() {
 
     try {
       const priceId = tier === 'starter' ? STRIPE_STARTER_PRICE_ID : STRIPE_PROFESSIONAL_PRICE_ID
-      console.log('Creating checkout session with priceId:', priceId)
+      const successUrl = `${APP_URL}/settings?welcome=true`
+      const cancelUrl = `${window.location.origin}/`
+
+      console.log('=== Checkout Debug ===')
+      console.log('priceId:', priceId)
+      console.log('successUrl:', successUrl)
+      console.log('cancelUrl:', cancelUrl)
+      console.log('SUPABASE_URL:', SUPABASE_URL)
 
       const response = await fetch(
         `${SUPABASE_URL}/functions/v1/create-checkout-session`,
@@ -362,15 +349,15 @@ function Pricing() {
           },
           body: JSON.stringify({
             priceId,
-            successUrl: `${APP_URL}/settings?welcome=true`,
-            cancelUrl: `${window.location.origin}/`,
+            successUrl,
+            cancelUrl,
           }),
         }
       )
 
       console.log('Response status:', response.status)
       const data = await response.json()
-      console.log('Response data:', data)
+      console.log('Response data:', JSON.stringify(data, null, 2))
 
       if (data.error) {
         throw new Error(data.error)
@@ -402,7 +389,7 @@ function Pricing() {
             Simple, Transparent Pricing
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Start with a 14-day free trial. No credit card required.
+            Start with a 14-day free trial. Cancel anytime.
           </p>
         </div>
 
@@ -534,7 +521,7 @@ function CTA() {
         <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
           Join hundreds of food businesses using EKProCook to stay compliant and save time.
         </p>
-        <a href="https://app.ekprocook.com" className="inline-block bg-white text-primary-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg">
+        <a href="#pricing" className="inline-block bg-white text-primary-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg">
           Start Your Free Trial
         </a>
       </div>
@@ -571,15 +558,15 @@ function Footer() {
           <div>
             <h4 className="font-semibold text-white mb-4">Legal</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+              <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-semibold text-white mb-4">Contact</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="mailto:hello@ekprocook.com" className="hover:text-white transition-colors">hello@ekprocook.com</a></li>
+              <li><a href="mailto:info@ekprocook.com" className="hover:text-white transition-colors">info@ekprocook.com</a></li>
             </ul>
           </div>
         </div>
@@ -593,6 +580,24 @@ function Footer() {
 }
 
 function App() {
+  useEffect(() => {
+    // Set canonical URL for homepage
+    const canonicalUrl = 'https://ekprocook.com/'
+    let canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link')
+      canonicalLink.rel = 'canonical'
+      document.head.appendChild(canonicalLink)
+    }
+    canonicalLink.href = canonicalUrl
+
+    return () => {
+      if (canonicalLink && canonicalLink.parentNode) {
+        canonicalLink.parentNode.removeChild(canonicalLink)
+      }
+    }
+  }, [])
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
